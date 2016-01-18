@@ -1,0 +1,1 @@
+Small sinatra app to serve temperature reading from a sensor writing to the serial port
