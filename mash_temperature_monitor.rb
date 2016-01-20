@@ -1,7 +1,7 @@
 require 'sinatra'
 require 'json'
-require "serialport"
-
+require 'serialport'
+require 'yaml'
 #params for serial port
 
 
@@ -17,6 +17,18 @@ class RequestLogger < Sinatra::Base
         "unit" => "C"
       }
     ]}.to_json
+  end
+
+  post /temperatures/ do
+    headers 'Access-Control-Allow-Origin' => '*'
+    content_type :json
+    mash_name = params['mash_name']
+    temperatures = params['temperatures']
+    File.open("mashes/#{mash_name}.yml","w+") do |file|
+      file.write({mash_name => temperatures}.to_yaml)
+    end
+
+
   end
 
   def read_from_serial
