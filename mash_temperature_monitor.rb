@@ -6,7 +6,7 @@ require 'yaml'
 
 
 class RequestLogger < Sinatra::Base
-  get /temperatures/ do
+  get '/temperatures' do
     headers 'Access-Control-Allow-Origin' => '*'
     content_type :json
 
@@ -19,16 +19,30 @@ class RequestLogger < Sinatra::Base
     ]}.to_json
   end
 
-  post /temperatures/ do
+  post '/temperatures' do
     headers 'Access-Control-Allow-Origin' => '*'
     content_type :json
     mash_name = params['mash_name']
-    temperatures = params['temperatures']
-    File.open("mashes/#{mash_name}.yml","w+") do |file|
-      file.write({mash_name => temperatures}.to_yaml)
+    temperatures = JSON.parse(params['temperatures'])
+
+    temperatures = temperatures.map do |temp_string|
+      JSON.parse(temp_string)
     end
 
+    File.open("mashes/#{mash_name}.json","w+") do |file|
+      file.write({mash_name => temperatures}.to_json)
+    end
 
+    {status: 201, body: "Created"}.to_json
+  end
+
+  get '/mashes/:mash_name' do
+    headers 'Access-Control-Allow-Origin' => '*'
+    content_type :json
+
+    return {status: 404, body: "Not Found"}.to_json unless File.exist?("mashes/#{params[:mash_name]}.json")
+
+    {"temperatures" => JSON.parse(File.open("mashes/#{params[:mash_name]}.json").read)[params[:mash_name]]}.to_json
   end
 
   def read_from_serial
