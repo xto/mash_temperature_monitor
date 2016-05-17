@@ -28,6 +28,10 @@ class RequestLogger < Sinatra::Base
     temperatures = temperatures.map do |temp_string|
       JSON.parse(temp_string)
     end
+    
+    temperatures.map do |temp|
+      temp["temperature"] = temp["temperature"].to_f
+    end
 
     File.open("mashes/#{mash_name}.json","w+") do |file|
       file.write({mash_name => temperatures}.to_json)
