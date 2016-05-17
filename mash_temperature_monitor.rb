@@ -2,21 +2,16 @@ require 'sinatra'
 require 'json'
 require 'serialport'
 require 'yaml'
-#params for serial port
-
 
 class RequestLogger < Sinatra::Base
   get '/temperatures' do
     headers 'Access-Control-Allow-Origin' => '*'
     content_type :json
-
-    {temperatures: [
-      {
-        "temperature" => read_from_serial.to_f,
-        "readAt" => Time.now.to_s,
-        "unit" => "C"
-      }
-    ]}.to_json
+    if ENV['DEBUG']
+      dummy_temp
+    else
+      real_temp
+    end
   end
 
   post '/temperatures' do
@@ -28,7 +23,7 @@ class RequestLogger < Sinatra::Base
     temperatures = temperatures.map do |temp_string|
       JSON.parse(temp_string)
     end
-    
+
     temperatures.map do |temp|
       temp["temperature"] = temp["temperature"].to_f
     end
@@ -47,6 +42,26 @@ class RequestLogger < Sinatra::Base
     return {status: 404, body: "Not Found"}.to_json unless File.exist?("mashes/#{params[:mash_name]}.json")
 
     {"temperatures" => JSON.parse(File.open("mashes/#{params[:mash_name]}.json").read)[params[:mash_name]]}.to_json
+  end
+
+  def dummy_temp
+    {temperatures: [
+      {
+        "temperature" => "#{rand(300)}.#{rand(99)}".to_f,
+        "readAt" => Time.now.to_s,
+        "unit" => "C"
+      }
+    ]}.to_json
+  end
+
+  def real_temp
+    {temperatures: [
+      {
+        "temperature" => read_from_serial.to_f,
+        "readAt" => Time.now.to_s,
+        "unit" => "C"
+      }
+    ]}.to_json
   end
 
   def read_from_serial
