@@ -1,9 +1,15 @@
 require 'sinatra'
+require "sinatra/config_file"
 require 'json'
 require 'serialport'
 require 'yaml'
+require 'particle'
+require 'rest-client'
 
 class RequestLogger < Sinatra::Base
+  register Sinatra::ConfigFile
+  config_file 'secrets.yml'
+
   get '/temperatures' do
     headers 'Access-Control-Allow-Origin' => '*'
     content_type :json
@@ -57,7 +63,7 @@ class RequestLogger < Sinatra::Base
   def real_temp
     {temperatures: [
       {
-        "temperature" => read_from_serial.to_f,
+        "temperature" => read_from_network.to_f,#read_from_serial.to_f,
         "readAt" => Time.now.to_s,
         "unit" => "C"
       }
@@ -79,5 +85,12 @@ class RequestLogger < Sinatra::Base
     serial_port_reading = serial_port.readline("\r\n")
     serial_port.close
     return serial_port_reading
+  end
+
+  def read_from_network
+    particle = Particle::Client.new(access_token: settings.access_token)
+    photon_ip = particle.device("XTO").variable("LocalIP")
+    response = RestClient.get("http://#{photon_ip}:4499", {Accept: 'text/plain'})
+    return response.body
   end
 end
